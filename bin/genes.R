@@ -1,3 +1,4 @@
+options(encoding = "UTF-8")
 writeLines("
 Hola, bienvenido al script para el analisis de RNA-Seq desarrollado por:
                           Alina y Uriel.
