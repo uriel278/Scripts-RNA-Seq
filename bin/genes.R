@@ -1,4 +1,8 @@
-options(encoding = "UTF-8")
+#Sys.setlocale(category = "LC_COLLATE", locale = "C")
+Sys.setlocale(category = "LC_CTYPE", locale = "C")
+#Sys.setlocale(category = "LC_MONETARY", locale = "C")
+#Sys.setlocale(category = "LC_NUMERIC", locale = "C")
+#Sys.setlocale(category = "LC_TIME", locale = "C")
 writeLines("
 Hola, bienvenido al script para el analisis de RNA-Seq desarrollado por:
                           Alina y Uriel.
@@ -17,11 +21,11 @@ if(raw=="n"){
   setwd(dr)
 }
 writeLines("\n")
-cat("Los archivos en formato válido que estan disponibles son: \n")
+cat("Los archivos en formato v?lido que estan disponibles son: \n")
 rfiles<-dir()[grep("\\.csv$|\\.txt$",dir())]
 rfilesAv<-paste(paste(1:length(rfiles),".",sep = ""), rfiles, sep = " ")
 cat(rfilesAv, sep = "\n")
-writeLines("Selecciona un archivo escribiendo el número que le antecede: ")
+writeLines("Selecciona un archivo escribiendo el n?mero que le antecede: ")
 selFile <- readLines(file("stdin"),1)
 selFile<-as.numeric(selFile)
 cat(c("Archivo",rfiles[selFile]),sep=": ")
