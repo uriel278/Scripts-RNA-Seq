@@ -1,6 +1,6 @@
 #Definiendo los paquetes a necesitar
 instala_paquetes<-function(){
-  pkgs_CRAN<-c("R.utils", "readR")
+  pkgs_CRAN<-c("R.utils", "readr")
   pkgs_Bioc<-c("limma", "Glimma", "edgeR")
   chooseCRANmirror(ind = 55)
   #Ahora iteramos por cada paquete
