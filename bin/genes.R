@@ -1,6 +1,6 @@
 #Definiendo los paquetes a necesitar
 instala_paquetes<-function(){
-  pkgs_CRAN<-c("R.utils")
+  pkgs_CRAN<-c("R.utils", "readR")
   pkgs_Bioc<-c("limma", "Glimma", "edgeR")
   #Ahora iteramos por cada paquete
   
@@ -33,6 +33,7 @@ Sys.setlocale(category = "LC_CTYPE", locale = "C")
 #Sys.setlocale(category = "LC_MONETARY", locale = "C")
 #Sys.setlocale(category = "LC_NUMERIC", locale = "C")
 #Sys.setlocale(category = "LC_TIME", locale = "C")
+instala_paquetes()
 writeLines("
 Hola, bienvenido al script para el analisis de RNA-Seq desarrollado por:
                           Alina y Uriel.
@@ -89,7 +90,6 @@ data<-rm_na(data)
 genesID<-data[,1]
 data<-data[,-1]
 
-instala_paquetes()
 
 
 #head(data)
