@@ -1,3 +1,33 @@
+#Definiendo los paquetes a necesitar
+instala_paquetes<-function(){
+  pkgs_CRAN<-c("R.utils")
+  pkgs_Bioc<-c("limma", "Glimma", "edgeR")
+  #Ahora iteramos por cada paquete
+  
+  if(!require("BiocManager")){
+    writeLines("El paquete BiocManager se va a instalar")
+    install.packages("BiocManager")
+    BiocManager::install(version = 3.14)
+  }
+  
+  for(pkg in 1:length(pkgs_CRAN)){
+    if(!require(pkg_CRAN[pkg])){
+      writeLines("Instalando paquetes necesarios")
+      chooseCRANmirror(ind = 55)
+      install.packages(pkgs_CRAN[pkg], dependencies = T, quiet = T)
+    }
+  }
+  
+  for(pkg in 1:length(pkgs_Bioc)){
+    if(!require(pkgs_Bioc[pkg], quietly = T)){
+      writeLines("Instalando paquetes necesarios")
+      BiocManager::install(pkgs_Bioc[pkg], update = F)
+    }
+  }
+  #cargando todos los paqutes
+  invisible(lapply(c(pkgs_CRAN,pkgs_Bioc), library, character.only = TRUE))
+}
+
 #Sys.setlocale(category = "LC_COLLATE", locale = "C")
 Sys.setlocale(category = "LC_CTYPE", locale = "C")
 #Sys.setlocale(category = "LC_MONETARY", locale = "C")
@@ -54,12 +84,14 @@ rm_na<-function(x){
 
 
 data<-rm_na(data)
-data
+#Una vez limpios de NAs, guardamos la informaci�n de los ID de genes en un
+#vector y dejamos solamente las columna que corresponden a muestras.
+genesID<-data[,1]
+data<-data[,-1]
+
+instala_paquetes()
 
 
-
-
-options(warn = defW)
 #head(data)
 #str(data)
 #summary(data)
@@ -90,18 +122,7 @@ library(R.utils)    #
 #--------------------
 
 #-------------------------------------------------------------------------------
-####Cambiando al directorio con los archivos
-setwd("~/SERVICIO SOCIAL/EPI UNAM/Scripts/datos lab 1")
 
-#-------------------------------------------------------------------------------
-### Importando los datos (en este caso es una matriz de conteos)
-x <- read.csv("gene_count.csv")
-## revisando las primeras 6 filas 
-head(x)
-## Obteniendo información acerca de nuestra matriz
-class(x)
-dim(x)
-#x <- x[,1:7]
 
 #-------------------------------------------------------------------------------
 ## Añadiendo información de grupos de interés 
@@ -259,3 +280,6 @@ par(mfrow=c(1,1))
 plotMD(tfit, column=1, status=dt[,1], main=colnames(tfit)[1], 
        xlim=c(-8,13)) # Investigar qué hace esta función.
 #-------------------------------------------------------------------------------
+
+
+options(warn = defW)
