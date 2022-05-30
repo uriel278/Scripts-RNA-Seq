@@ -8,7 +8,7 @@ instala_paquetes<-function(){
     writeLines("El paquete BiocManager se va a instalar")
     install.packages("BiocManager")
   }
-  BiocManager::install(version = 3.14)
+  BiocManager::install(version = "3.14")
   for(pkg in 1:length(pkgs_CRAN)){
     if(!require(pkg_CRAN[pkg])){
       writeLines("Instalando paquetes necesarios")
