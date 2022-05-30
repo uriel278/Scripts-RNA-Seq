@@ -4,12 +4,11 @@ instala_paquetes<-function(){
   pkgs_Bioc<-c("limma", "Glimma", "edgeR")
   #Ahora iteramos por cada paquete
   
-  if(!require("BiocManager")){
+  if(!require("BiocManager", quietly = T)){
     writeLines("El paquete BiocManager se va a instalar")
     install.packages("BiocManager")
-    BiocManager::install(version = 3.14)
   }
-  
+  BiocManager::install(version = 3.14)
   for(pkg in 1:length(pkgs_CRAN)){
     if(!require(pkg_CRAN[pkg])){
       writeLines("Instalando paquetes necesarios")
@@ -27,7 +26,6 @@ instala_paquetes<-function(){
   #cargando todos los paqutes
   invisible(lapply(c(pkgs_CRAN,pkgs_Bioc), library, character.only = TRUE))
 }
-
 #Sys.setlocale(category = "LC_COLLATE", locale = "C")
 Sys.setlocale(category = "LC_CTYPE", locale = "C")
 #Sys.setlocale(category = "LC_MONETARY", locale = "C")
