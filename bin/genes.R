@@ -2,6 +2,7 @@
 instala_paquetes<-function(){
   pkgs_CRAN<-c("R.utils", "readR")
   pkgs_Bioc<-c("limma", "Glimma", "edgeR")
+  chooseCRANmirror(ind = 55)
   #Ahora iteramos por cada paquete
   
   if(!require("BiocManager", quietly = T)){
@@ -12,7 +13,7 @@ instala_paquetes<-function(){
   for(pkg in 1:length(pkgs_CRAN)){
     if(!require(pkg_CRAN[pkg])){
       writeLines("Instalando paquetes necesarios")
-      chooseCRANmirror(ind = 55)
+      
       install.packages(pkgs_CRAN[pkg], dependencies = T, quiet = T)
     }
   }
