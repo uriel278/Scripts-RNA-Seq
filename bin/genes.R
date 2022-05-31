@@ -5,24 +5,22 @@ instala_paquetes<-function(){
   chooseCRANmirror(ind = 55)
   #Ahora iteramos por cada paquete
   
-  if(!require("BiocManager", quietly = T)){
+  if(!("BiocManager" %in% installed.packages()[,"Package"])){
     writeLines("El paquete BiocManager se va a instalar")
-    install.packages("BiocManager")
+    install.packages("BiocManager",dependencies = T)
   }
+
   BiocManager::install(version = "3.14")
-  for(pkg in 1:length(pkgs_CRAN)){
-    if(!require(pkg_CRAN[pkg])){
-      writeLines("Instalando paquetes necesarios")
-      
-      install.packages(pkgs_CRAN[pkg], dependencies = T, quiet = T)
-    }
+  pkgs_faltantes<-pkgs_CRAN[!(pkgs_CRAN %in% installed.packages()[,"Package"])] 
+  if(length(pkgs_faltantes)>0){
+    writeLines("Instalando paquetes necesarios")
+    install.packages(pkgs_faltantes, dependencies = T)
   }
   
-  for(pkg in 1:length(pkgs_Bioc)){
-    if(!require(pkgs_Bioc[pkg], quietly = T)){
-      writeLines("Instalando paquetes necesarios")
-      BiocManager::install(pkgs_Bioc[pkg], update = F)
-    }
+  pkgs_faltantes<-pkgs_Bioc[!(pkgs_Bioc %in% installed.packages()[,"Package"])] 
+  if(length(pkgs_faltantes)>0){
+    writeLines("Instalando paquetes necesarios")
+    install.packages(pkgs_faltantes, dependencies = T)
   }
   #cargando todos los paqutes
   invisible(lapply(c(pkgs_CRAN,pkgs_Bioc), library, character.only = TRUE))
