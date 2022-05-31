@@ -10,7 +10,7 @@ instala_paquetes<-function(){
     install.packages("BiocManager",dependencies = T)
   }
 
-  if(BiocManager::version != '3.14') BiocManager::install(version = "3.14")
+  if(BiocManager::version() != '3.14') BiocManager::install(version = "3.14")
   pkgs_faltantes<-pkgs_CRAN[!(pkgs_CRAN %in% installed.packages()[,"Package"])] 
   if(length(pkgs_faltantes)>0){
     writeLines("Instalando paquetes necesarios")
