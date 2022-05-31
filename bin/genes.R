@@ -1,3 +1,5 @@
+defW<-getOption("warn")
+options(warn = -1)
 #Definiendo los paquetes a necesitar
 instala_paquetes<-function(){
   pkgs_CRAN<-c("R.utils", "readr")
@@ -36,8 +38,7 @@ Hola, bienvenido al script para el analisis de RNA-Seq desarrollado por:
                           Alina y Uriel.
 ")
 
-defW<-getOption("warn")
-options(warn = -1)
+
 
 cat("El directorio de trabajo actual es: ", getwd()," Es el correcto[s/n]: ")
 #readLines(file("stdin"),1) nos permite obtener inputs del usuario en forma
