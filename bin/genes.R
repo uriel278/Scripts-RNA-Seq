@@ -96,7 +96,7 @@ data<-data[,-1]
 #summary(data)
 #print(getwd())
 
-
+library(readr)
 
 #cat("La matriz de conteos encontrada en el directorio es: ", dir()[1])
 
