@@ -1,17 +1,17 @@
 #Definiendo los paquetes a necesitar
 instala_paquetes<-function(){
   pkgs_CRAN<-c("R.utils", "readr")
-  pkgs_Bioc<-c("limma", "Glimma", "edgeR")
+  pkgs_Bioc<-c("limma", "edgeR")
   chooseCRANmirror(ind = 55)
   #Ahora iteramos por cada paquete
   
-  if(!require("BiocManager", quietly = T)){
+  if(!require("BiocManager", quietly = T, character.only = T)){
     writeLines("El paquete BiocManager se va a instalar")
     install.packages("BiocManager")
   }
   BiocManager::install(version = "3.14")
   for(pkg in 1:length(pkgs_CRAN)){
-    if(!require(pkg_CRAN[pkg])){
+    if(!require(pkg_CRAN[pkg], quietly = T, character.only = T)){
       writeLines("Instalando paquetes necesarios")
       
       install.packages(pkgs_CRAN[pkg], dependencies = T, quiet = T)
