@@ -1,6 +1,6 @@
 #Definiendo los paquetes a necesitar
 instala_paquetes<-function(){
-  pkgs_CRAN<-c("R.utils", "readr")
+  pkgs_CRAN<-c("R.utils", "readr","dplyr")
   pkgs_Bioc<-c("limma", "edgeR")
   chooseCRANmirror(ind = 55)
   #Ahora iteramos por cada paquete
@@ -96,7 +96,7 @@ data<-data[,-1]
 #summary(data)
 #print(getwd())
 
-library(readr)
+library(dplyr)
 
 #cat("La matriz de conteos encontrada en el directorio es: ", dir()[1])
 
