@@ -55,9 +55,9 @@ cat("Los archivos en formato v?lido que estan disponibles son: \n")
 rfiles<-dir()[grep("\\.csv$|\\.txt$",dir())]
 rfilesAv<-paste(paste(1:length(rfiles),".",sep = ""), rfiles, sep = " ")
 cat(rfilesAv, sep = "\n")
-writeLines("Selecciona un archivo escribiendo el n?mero que le antecede: ")
-selFile <- readLines(file("stdin"),1)
-selFile<-as.numeric(selFile)
+writeLines("Selecciona el archivo que contiene los datos de cada muestra escribiendo el numero que le antecede: ")
+selFile <- as.numeric(readLines(file("stdin"),1))
+#selFile<-as.numeric(selFile)
 cat(c("Archivo",rfiles[selFile]),sep=": ")
 writeLines("\n")
 
@@ -72,7 +72,7 @@ rm_na<-function(x){
   genes_NA<-unique(which(is.na(x))%%dim(x)[1])
   
   #Removing genes with NAs (if there is at least one): 
-  if(length(genes_NA)>1){
+  if(length(genes_NA)>0){
     #Retrieving and showing names of genes with NA,
     #it is assumed that column 1 stores genes' names:
     writeLines("Los siguientes genes contienen NAs y han sido removidos: ")
@@ -83,8 +83,9 @@ rm_na<-function(x){
 }
 
 
+
 data<-rm_na(data)
-#Una vez limpios de NAs, guardamos la informaci�n de los ID de genes en un
+#Una vez limpios de NAs, guardamos la informaci�n de los ID de genes en un
 #vector y dejamos solamente las columna que corresponden a muestras.
 genesID<-data[,1]
 data<-data[,-1]
@@ -100,6 +101,31 @@ data<-data[,-1]
 
 #cat("La matriz de conteos encontrada en el directorio es: ", dir()[1])
 
+#-------------------------------------------------------------------------------
+#Función para obtener los datos del diseño experimental
+getED<- function(validFiles,sampleFileNumber) {  # nolint # nolint
+  avaliableFiles<- validFiles[-sampleFileNumber] # nolint
+  writeLines("Selecciona el archivo que contiene la informacion del diseño experimental para cada 
+  \nmuestra escribiendo el numero que le antecede: ")
+  rfilesAv<- paste(paste(1:length(avaliableFiles),".",sep = ""), avaliableFiles, sep = " ")
+  cat(rfilesAv, sep = "\n")
+  selectedFile <- as.numeric(readLines(file("stdin"),1))
+  EDFile<- readr::read_csv(avaliableFiles[selectedFile])
+  #Validando que no haya muestras con NAs
+  sampsWNAs<-unique(which(is.na(EDFile))%%dim(EDFile)[1])
+  if(length(sampsWNAs)>0){
+    writeLines("Se detectó que las muestras listadas carecen de información para alguna\n
+    variable o esta es invalida.\n
+    Por favor revisa tu archivo e intentalo de nuevo.")
+    cat(dplyr::pull(EDFile[sampsWNAs,],1), sep = ", ")
+    quit(save = "no")
+  }
+  EDFile <- EDFile %>% mutate(across(-1,as.factor))
+  return(ED)
+}
+
+
+#-------------------------------------------------------------------------------
 
 #print(wel)
 #d<-dir()[grep("\\.R$",dir())]
@@ -121,7 +147,7 @@ library(R.utils)    #
 #--------------------
 
 #-------------------------------------------------------------------------------
-
+#
 
 #-------------------------------------------------------------------------------
 ## Añadiendo información de grupos de interés 
