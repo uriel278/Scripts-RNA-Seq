@@ -122,6 +122,7 @@ getED<- function(validFiles,sampleFileNumber) {  # nolint # nolint
   EDFile <- EDFile %>% mutate(across(-1,as.factor))
   return(ED)
 }
+getED(rfiles,selFile)
 
 
 #-------------------------------------------------------------------------------
@@ -140,7 +141,7 @@ getED<- function(validFiles,sampleFileNumber) {  # nolint # nolint
 ### Paquetes necesarios
 #--------------------
 library(limma)      #
-library(Glimma)     #
+#library(Glimma)     #
 library(edgeR)      #
 library(R.utils)    #
 #--------------------
