@@ -1,28 +1,28 @@
-defW<-getOption("warn")
-options(warn = -1)
 #Definiendo los paquetes a necesitar
 instala_paquetes<-function(){
   pkgs_CRAN<-c("R.utils", "readr")
-  pkgs_Bioc<-c("limma", "edgeR")
+  pkgs_Bioc<-c("limma", "Glimma", "edgeR")
   chooseCRANmirror(ind = 55)
   #Ahora iteramos por cada paquete
   
-  if(!("BiocManager" %in% installed.packages()[,"Package"])){
+  if(!require("BiocManager", quietly = T)){
     writeLines("El paquete BiocManager se va a instalar")
-    install.packages("BiocManager",dependencies = T)
+    install.packages("BiocManager")
   }
-
-  if(BiocManager::version() != '3.14') BiocManager::install(version = "3.14")
-  pkgs_faltantes<-pkgs_CRAN[!(pkgs_CRAN %in% installed.packages()[,"Package"])] 
-  if(length(pkgs_faltantes)>0){
-    writeLines("Instalando paquetes necesarios")
-    install.packages(pkgs_faltantes, dependencies = T)
+  BiocManager::install(version = "3.14")
+  for(pkg in 1:length(pkgs_CRAN)){
+    if(!require(pkg_CRAN[pkg])){
+      writeLines("Instalando paquetes necesarios")
+      
+      install.packages(pkgs_CRAN[pkg], dependencies = T, quiet = T)
+    }
   }
   
-  pkgs_faltantes<-pkgs_Bioc[!(pkgs_Bioc %in% installed.packages()[,"Package"])] 
-  if(length(pkgs_faltantes)>0){
-    writeLines("Instalando paquetes necesarios")
-    install.packages(pkgs_faltantes, dependencies = T)
+  for(pkg in 1:length(pkgs_Bioc)){
+    if(!require(pkgs_Bioc[pkg], quietly = T)){
+      writeLines("Instalando paquetes necesarios")
+      BiocManager::install(pkgs_Bioc[pkg], update = F)
+    }
   }
   #cargando todos los paqutes
   invisible(lapply(c(pkgs_CRAN,pkgs_Bioc), library, character.only = TRUE))
@@ -38,7 +38,8 @@ Hola, bienvenido al script para el analisis de RNA-Seq desarrollado por:
                           Alina y Uriel.
 ")
 
-
+defW<-getOption("warn")
+options(warn = -1)
 
 cat("El directorio de trabajo actual es: ", getwd()," Es el correcto[s/n]: ")
 #readLines(file("stdin"),1) nos permite obtener inputs del usuario en forma
@@ -114,7 +115,7 @@ data<-data[,-1]
 ### Paquetes necesarios
 #--------------------
 library(limma)      #
-#library(Glimma)     #
+library(Glimma)     #
 library(edgeR)      #
 library(R.utils)    #
 #--------------------
