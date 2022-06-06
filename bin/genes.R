@@ -1,6 +1,6 @@
 #Definiendo los paquetes a necesitar
 instala_paquetes<-function(){
-  pkgs_CRAN<-c("R.utils", "readr","dplyr")
+  pkgs_CRAN<-c("R.utils", "readr", "dplyr")
   pkgs_Bioc<-c("limma", "edgeR")
   chooseCRANmirror(ind = 55)
   #Ahora iteramos por cada paquete
@@ -120,7 +120,7 @@ getED<- function(validFiles,sampleFileNumber) {  # nolint # nolint
     quit(save = "no")
   }
   EDFile <- EDFile %>% mutate(across(-1,as.factor))
-  return(ED)
+  return(EDFile)
 }
 getED(rfiles,selFile)
 
