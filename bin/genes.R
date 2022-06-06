@@ -19,7 +19,7 @@ instala_paquetes<-function(){
   }
   
   for(pkg in 1:length(pkgs_Bioc)){
-    if(!require(pkgs_Bioc[pkg], quietly = T)){
+    if(!require(pkgs_Bioc[pkg], quietly = T, character.only = T)){
       writeLines("Instalando paquetes necesarios")
       BiocManager::install(pkgs_Bioc[pkg], update = F)
     }
