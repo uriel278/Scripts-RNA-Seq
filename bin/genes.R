@@ -11,9 +11,8 @@ instala_paquetes<-function(){
   }
   BiocManager::install(version = "3.14")
   for(pkg in 1:length(pkgs_CRAN)){
-    if(!require(pkg_CRAN[pkg], quietly = T, character.only = T)){
+    if(!require(pkgs_CRAN[pkg], quietly = T, character.only = T)){
       writeLines("Instalando paquetes necesarios")
-      
       install.packages(pkgs_CRAN[pkg], dependencies = T, quiet = T)
     }
   }
