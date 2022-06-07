@@ -9,7 +9,9 @@ instala_paquetes<-function(){
     writeLines("El paquete BiocManager se va a instalar")
     install.packages("BiocManager")
   }
-  BiocManager::install(version = "3.14")
+  if(BiocManager::version()!='3.14') {
+    BiocManager::install(version = "3.14", update = F)
+  }
   for(pkg in 1:length(pkgs_CRAN)){
     if(!require(pkgs_CRAN[pkg], quietly = T, character.only = T)){
       writeLines("Instalando paquetes necesarios")
@@ -61,9 +63,9 @@ cat(c("Archivo",rfiles[selFile]),sep=": ")
 writeLines("\n")
 
 #data<-read.table(rfiles[selFile], header = T)
-data<- readr::read_delim(file = rfiles[selFile], delim = ",", col_names = T,
+countData<- readr::read_delim(file = rfiles[selFile], delim = ",", col_names = T,
                          show_col_types = F)
-str(data)
+str(countData)
 writeLines("\n")
 
 rm_na<-function(x){
@@ -79,15 +81,21 @@ rm_na<-function(x){
     writeLines("\n")
     x<-na.omit(x)
   }
+  return(x)
 }
 
 
 
-data<-rm_na(data)
-#Una vez limpios de NAs, guardamos la informaci�n de los ID de genes en un
-#vector y dejamos solamente las columna que corresponden a muestras.
-genesID<-data[,1]
-data<-data[,-1]
+countData<-rm_na(countData)
+writeLines("viendo datos después de filtar NAs")
+str(countData)
+#Una vez limpios de NAs, guardamos la informacion de los ID de genes en un
+#vector y dejamos solamente las columna que corresponden a muestras, ie, eliminamos
+#la primer columna.
+genesID<-countData[,1]
+countData<-countData[,-1]
+writeLines("Viendo datos después de quitar columna de genes")
+str(countData)
 
 
 
@@ -109,7 +117,7 @@ getED<- function(validFiles,sampleFileNumber) {  # nolint # nolint
   rfilesAv<- paste(paste(1:length(avaliableFiles),".",sep = ""), avaliableFiles, sep = " ")
   cat(rfilesAv, sep = "\n")
   selectedFile <- as.numeric(readLines(file("stdin"),1))
-  EDFile<- readr::read_csv(avaliableFiles[selectedFile])
+  EDFile<- readr::read_csv(avaliableFiles[selectedFile],show_col_types = F)
   #Validando que no haya muestras con NAs
   sampsWNAs<-unique(which(is.na(EDFile))%%dim(EDFile)[1])
   if(length(sampsWNAs)>0){
@@ -122,7 +130,7 @@ getED<- function(validFiles,sampleFileNumber) {  # nolint # nolint
   EDFile <- EDFile %>% mutate(across(-1,as.factor))
   return(EDFile)
 }
-getED(rfiles,selFile)
+EDMetaData<-getED(rfiles,selFile)
 
 
 #-------------------------------------------------------------------------------
@@ -145,109 +153,169 @@ library(limma)      #
 library(edgeR)      #
 library(R.utils)    #
 #--------------------
-
+writeLines("Hasta aqui sirve")
+countData <- DGEList(counts = countData, group = pull(EDMetaData,2), genes = genesID)
+## Información de la estructura
+class(countData)
+head(countData)
 #-------------------------------------------------------------------------------
 #
+writeLines("El analisis esta por comenzar y los resultados seran almacenados
+en la carpeta \"Resultados_RNASeq\", en el directorio de trabajo que
+usted proporciono al principio.")
+
+folderResultados<- "Resultados_RNASeq"
+if(!file.exists(folderResultados)) {
+ dir.create(folderResultados)
+}
+
 
 #-------------------------------------------------------------------------------
 ## Añadiendo información de grupos de interés 
-group <- as.factor(c("WT", "WT", "ult1", "ult1", "ult1ult2", "ult1ult2"))
-samplenames<-c("WT", "WT", "ult1", "ult1", "ult1ult2", "ult1ult2")
+#group <- as.factor(c("WT", "WT", "ult1", "ult1", "ult1ult2", "ult1ult2"))
+#samplenames<-c("WT", "WT", "ult1", "ult1", "ult1ult2", "ult1ult2")
 ## Pasando de números a id de genes como nombre de filas
-rownames(x) <- x[,1]
+#rownames(x) <- x[,1]
 ## Eliminando columna redundante
-x <- x[,-1]
+#x <- x[,-1]
 ## Extrayendo de nuevo los numbres de los genes
-geneid <- rownames(x)
+#geneid <- rownames(x)
 ## Creando la estructura de datos que nos permitirá interactuar con los 
 ## paquetes cargados previamente.
-x <- DGEList(counts = x, group = group, genes=geneid)
-## Información de la estructura
-class(x)
-head(x)
+
 
 #-------------------------------------------------------------------------------
 ## obteniendo "Conteos por millón" que servirán para los gráficos exploratorios
-cpm <- cpm(x)
-lcpm <- cpm(x, log=TRUE)
-L <- mean(x$samples$lib.size) * 1e-6
-M <- median(x$samples$lib.size) * 1e-6
+cpm <- cpm(countData)
+lcpm <- cpm(countData, log=TRUE)
+L <- mean(countData$samples$lib.size) * 1e-6
+M <- median(countData$samples$lib.size) * 1e-6
 c(L, M)
 summary(lcpm)
 
+
+library(RColorBrewer)
+
+fileNameGenerator<-function(folder,fileName){
+  paste(c(getwd(),folder,fileName), sep = "", collapse = "/")
+}
+
+plotGenerator<-function(f,folderOut,fileNameOut,width,height,dpi,...) {
+file <- fileNameGenerator(folderOut,fileNameOut) 
+png(file = file, width = width, height = height, res = dpi)
+f(...)
+dev.off()
+}
+
+densityPlotCounts<-function(counts) {
+  data<-counts
+  nsamples <- ncol(data)
+  col <- brewer.pal(nsamples, "Paired")
+  L <- mean(data$samples$lib.size) * 1e-6
+  M <- median(data$samples$lib.size) * 1e-6
+  lcpm.cutoff <- log2(10/M + 2/L)
+  par(mfrow=c(1,2))
+  lcpm <- cpm(data, log=TRUE)
+  plot(density(lcpm[,1]), col=col[1], lwd=2, ylim=c(0,0.26), las=2, main="", xlab="")
+  title(main="A. Datos Crudos", xlab="Log-cpm")
+  abline(v=lcpm.cutoff, lty=3)
+  for (i in 2:nsamples){
+    den <- density(lcpm[,i])
+    lines(den$x, den$y, col=col[i], lwd=2)
+  }
+  legend("topright", colnames(data$counts), text.col=col, bty="n")
+  keep.exprs <- filterByExpr(data, group=data$sample$group)
+  data <- data[keep.exprs,, keep.lib.sizes=FALSE]
+  lcpm <- cpm(data, log=TRUE) #actualizando los log(cpm) usando los datos filtrados
+
+  plot(density(lcpm[,1]), col=col[1], lwd=2, ylim=c(0,0.26), las=2, main="", xlab="")
+  title(main="B. Datos Filtrados", xlab="Log-cpm")
+  abline(v=lcpm.cutoff, lty=3)
+  for (i in 2:nsamples){
+    den <- density(lcpm[,i])
+    lines(den$x, den$y, col=col[i], lwd=2)
+  }
+  legend("topright", colnames(data$counts), text.col=col, bty="n")
+}
+
+plotGenerator(densityPlotCounts, folderResultados, "01_densidad_Crudos_vs_Filtrados.png", 1000*2.1, 1800, 300, counts = countData)
+#plotGenerator(densityPlotCounts,folderResultados,"01_densidad_Crudos_vs_Filtrados.png",1000*2.1,1800,300,data=count_DGEList)
 #-------------------------------------------------------------------------------
 # Revisando por genes con conteos cero en todas las muestras 
-table(rowSums(x$counts==0)==9)
+table(rowSums(countData$counts==0)==9)
 ## Filtrado de genes
-keep.exprs <- filterByExpr(x, group=group)
-x <- x[keep.exprs,, keep.lib.sizes=FALSE]
-dim(x)
+keep.exprs <- filterByExpr(countData, group=collapse(EDMetaData,2))
+countData <- countData[keep.exprs,, keep.lib.sizes=FALSE]
+#dim(countData)
 
 #-------------------------------------------------------------------------------
 ## Gráfico comparativos de las densidades de los conteos en el log de los datos
 ## crudos y en el log de los datos filtrados arriba
-lcpm.cutoff <- log2(10/M + 2/L) # log de la media del tamaño de la librería, 
+ # log de la media del tamaño de la librería, 
 # ajustado para evitar log(0).
+#as.formula(paste("~",paste(names(EDMetaData),collapse=" + "),sep=""))
 
-library(RColorBrewer)
-nsamples <- ncol(x)
-col <- brewer.pal(nsamples, "Paired")
-par(mfrow=c(1,2))
-plot(density(lcpm[,1]), col=col[1], lwd=2, ylim=c(0,0.26), las=2, main="", xlab="")
-title(main="A. Raw data", xlab="Log-cpm")
-abline(v=lcpm.cutoff, lty=3)
-for (i in 2:nsamples){
-  den <- density(lcpm[,i])
-  lines(den$x, den$y, col=col[i], lwd=2)
-}
-legend("topright", colnames(x$counts), text.col=col, bty="n")
-
-lcpm <- cpm(x, log=TRUE) #actualizando los log(cpm) usando los datos filtrados
-plot(density(lcpm[,1]), col=col[1], lwd=2, ylim=c(0,0.26), las=2, main="", xlab="")
-title(main="B. Filtered data", xlab="Log-cpm")
-abline(v=lcpm.cutoff, lty=3)
-for (i in 2:nsamples){
-  den <- density(lcpm[,i])
-  lines(den$x, den$y, col=col[i], lwd=2)
-}
-legend("topright", colnames(x$counts), text.col=col, bty="n")
 
 #-------------------------------------------------------------------------------
 # Gráficos de caja para ver la dispersión de las muestras antes y después de
 # normalizar
-boxplot(lcpm,las=2, col=col)
-title(main="A. Unnormalised data",ylab="Log-cpm")
-x <- calcNormFactors(x, method = "TMM")
-x$samples$norm.factors
-lcpm <- cpm(x, log=TRUE)
-boxplot(lcpm, las=2, col=col, main="")
-title(main="B.Normalised data",ylab="Log-cpm")
+boxPlotNormalization<-function(counts){
+  data<-counts
+  nsamples <- ncol(data)
+  col <- brewer.pal(nsamples, "Paired")
+  lcpm <- cpm(data, log=TRUE)
+  par(mfrow=c(1,2))
+  boxplot(lcpm,las=2, col=col)
+  title(main="A. Datos crudos",ylab="Log-cpm")
+  data <- calcNormFactors(data, method = "TMM")
+  data$samples$norm.factors
+  lcpm <- cpm(data, log=TRUE)
+  boxplot(lcpm, las=2, col=col, main="")
+  title(main="B. Datos normalizados",ylab="Log-cpm")
+}
+plotGenerator(boxPlotNormalization, folderResultados, "02_boxPlot_Crudos_vs_Normalizados.png", 1000*2.1, 1800, 300, counts = countData)
 
 # Nota: Debido a que observamos unos factores de normalización muy cercanos a 1,
 # se probó para ver si en realidad el valor esperado es 1
 
 #Primero normalidad
-shapiro.test(x$samples$norm.factors) #Nos inclinamos hacia la nula de N(mu,sigma)
+#shapiro.test(x$samples$norm.factors) #Nos inclinamos hacia la nula de N(mu,sigma)
 #Ahora si la de interés. 
-t.test(x$samples$norm.factors, alternative = "two.sided",mu=1)
+#t.test(x$samples$norm.factors, alternative = "two.sided",mu=1)
 
 #-------------------------------------------------------------------------------
 # Reducción de dimensionalidad con MDS (método basado en distancias)
-lcpm <- cpm(x, log=TRUE)
-par(mfrow=c(1,1))
-col.group <- group
-levels(col.group) <-  brewer.pal(nlevels(col.group), "Set1")
-col.group <- as.character(col.group)
-plotMDS(lcpm, labels=group, col=col.group)
-title(main="Sample groups")
+writeLines("Viendo lo que manda el pull del DE")
+collapse(EDMetaData,2)
 
+dimensionReductionPlot<-function(counts) {
+  x<-counts
+  lcpm <- cpm(x, log=TRUE)
+  par(mfrow=c(1,1))
+  col.group <- pull(EDMetaData,2)
+  levels(col.group) <-  brewer.pal(nlevels(col.group), "Paired")
+  col.group <- as.character(col.group)
+  plotMDS(lcpm, labels=pull(EDMetaData,1), col=col.group)
+  title(main="Sample groups")
+}
+
+plotGenerator(dimensionReductionPlot,folderResultados, "03_MDS_Dimension_Reduction.png", 1000*2.1, 1800, 300, counts = countData)
 #-------------------------------------------------------------------------------
-# Creando nuestra matriz diseño para el modelo lineal
-design <- model.matrix(~0+group)
-# Buscando y reemplazando patrones: ¿suena a grep?
-colnames(design) <- gsub("group", "", colnames(design))
-design
 
+fullSampleInfo <- data.frame(EDMetaData[,-1], countData$samples[,-1], check.names = F)
+names(fullSampleInfo) <- c("group", names(fullSampleInfo)[-1])
+countData$samples <- fullSampleInfo
+# Creando nuestra matriz diseño para el modelo lineal
+formulaED <- paste("~0+",paste(names(countData$samples[1:dim(EDMetaData)[2]-1]),sep="",collapse = "+"),sep="") 
+formulaED <- as.formula(formulaED)
+formulaED
+names(EDMetaData)<-c(names(EDMetaData)[1],names(countData$samples[1:dim(EDMetaData)[2]-1]))
+EDMetaData
+design <- model.matrix(formulaED, EDMetaData)
+# Buscando y reemplazando patrones: ¿suena a grep?
+#colnames(design) <- gsub("group", "", colnames(design))
+design
+writeLines("---------------------------------Hasta aqui nos interesa por ahora--------------------------------------------")
 #-------------------------------------------------------------------------------
 # Definiendo la matriz de contrastes de interés
 contr.matrix <- makeContrasts(
