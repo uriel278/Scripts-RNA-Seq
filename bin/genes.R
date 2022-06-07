@@ -1,6 +1,6 @@
-#Definiendo los paquetes a necesitar
+
 instala_paquetes<-function(){
-  pkgs_CRAN<-c("R.utils", "readr", "dplyr")
+  pkgs_CRAN<-c("R.utils", "readr", "dplyr","RColorBrewer")
   pkgs_Bioc<-c("limma", "edgeR")
   chooseCRANmirror(ind = 55)
   #Ahora iteramos por cada paquete
@@ -43,14 +43,14 @@ defW<-getOption("warn")
 options(warn = -1)
 
 cat("El directorio de trabajo actual es: ", getwd()," Es el correcto[s/n]: ")
-#readLines(file("stdin"),1) nos permite obtener inputs del usuario en forma
-#interactiva, algo similar a python.
+
 raw <- readLines(file("stdin"),1)
 if(raw=="n"){
   cat("Ingresa el directorio correcto: ")
   dr<-raw <- readLines(file("stdin"),1)
   setwd(dr)
 }
+
 writeLines("\n")
 cat("Los archivos en formato v?lido que estan disponibles son: \n")
 rfiles<-dir()[grep("\\.csv$|\\.txt$",dir())]
@@ -58,11 +58,11 @@ rfilesAv<-paste(paste(1:length(rfiles),".",sep = ""), rfiles, sep = " ")
 cat(rfilesAv, sep = "\n")
 writeLines("Selecciona el archivo que contiene los datos de cada muestra escribiendo el numero que le antecede: ")
 selFile <- as.numeric(readLines(file("stdin"),1))
-#selFile<-as.numeric(selFile)
+
 cat(c("Archivo",rfiles[selFile]),sep=": ")
 writeLines("\n")
 
-#data<-read.table(rfiles[selFile], header = T)
+
 countData<- readr::read_delim(file = rfiles[selFile], delim = ",", col_names = T,
                          show_col_types = F)
 str(countData)
@@ -99,14 +99,10 @@ str(countData)
 
 
 
-#head(data)
-#str(data)
-#summary(data)
-#print(getwd())
+
 
 library(dplyr)
 
-#cat("La matriz de conteos encontrada en el directorio es: ", dir()[1])
 
 #-------------------------------------------------------------------------------
 #Función para obtener los datos del diseño experimental
@@ -134,30 +130,14 @@ EDMetaData<-getED(rfiles,selFile)
 
 
 #-------------------------------------------------------------------------------
-
-#print(wel)
-#d<-dir()[grep("\\.R$",dir())]
-#print(d)
-#getwd()  
-#Con esto obtenemos inputs del usuario
-#argus <- commandArgs(trailingOnly = T)
-#print(argus)
-
-# RNAseq
-
-
 ### Paquetes necesarios
 #--------------------
 library(limma)      #
-#library(Glimma)     #
 library(edgeR)      #
 library(R.utils)    #
 #--------------------
-writeLines("Hasta aqui sirve")
 countData <- DGEList(counts = countData, group = pull(EDMetaData,2), genes = genesID)
 ## Información de la estructura
-class(countData)
-head(countData)
 #-------------------------------------------------------------------------------
 #
 writeLines("El analisis esta por comenzar y los resultados seran almacenados
@@ -169,19 +149,6 @@ if(!file.exists(folderResultados)) {
  dir.create(folderResultados)
 }
 
-
-#-------------------------------------------------------------------------------
-## Añadiendo información de grupos de interés 
-#group <- as.factor(c("WT", "WT", "ult1", "ult1", "ult1ult2", "ult1ult2"))
-#samplenames<-c("WT", "WT", "ult1", "ult1", "ult1ult2", "ult1ult2")
-## Pasando de números a id de genes como nombre de filas
-#rownames(x) <- x[,1]
-## Eliminando columna redundante
-#x <- x[,-1]
-## Extrayendo de nuevo los numbres de los genes
-#geneid <- rownames(x)
-## Creando la estructura de datos que nos permitirá interactuar con los 
-## paquetes cargados previamente.
 
 
 #-------------------------------------------------------------------------------
@@ -239,7 +206,7 @@ densityPlotCounts<-function(counts) {
 }
 
 plotGenerator(densityPlotCounts, folderResultados, "01_densidad_Crudos_vs_Filtrados.png", 1000*2.1, 1800, 300, counts = countData)
-#plotGenerator(densityPlotCounts,folderResultados,"01_densidad_Crudos_vs_Filtrados.png",1000*2.1,1800,300,data=count_DGEList)
+
 #-------------------------------------------------------------------------------
 # Revisando por genes con conteos cero en todas las muestras 
 table(rowSums(countData$counts==0)==9)
@@ -249,12 +216,6 @@ countData <- countData[keep.exprs,, keep.lib.sizes=FALSE]
 #dim(countData)
 
 #-------------------------------------------------------------------------------
-## Gráfico comparativos de las densidades de los conteos en el log de los datos
-## crudos y en el log de los datos filtrados arriba
- # log de la media del tamaño de la librería, 
-# ajustado para evitar log(0).
-#as.formula(paste("~",paste(names(EDMetaData),collapse=" + "),sep=""))
-
 
 #-------------------------------------------------------------------------------
 # Gráficos de caja para ver la dispersión de las muestras antes y después de
@@ -308,13 +269,11 @@ countData$samples <- fullSampleInfo
 # Creando nuestra matriz diseño para el modelo lineal
 formulaED <- paste("~0+",paste(names(countData$samples[1:dim(EDMetaData)[2]-1]),sep="",collapse = "+"),sep="") 
 formulaED <- as.formula(formulaED)
-formulaED
 names(EDMetaData)<-c(names(EDMetaData)[1],names(countData$samples[1:dim(EDMetaData)[2]-1]))
 EDMetaData
 design <- model.matrix(formulaED, EDMetaData)
 # Buscando y reemplazando patrones: ¿suena a grep?
-#colnames(design) <- gsub("group", "", colnames(design))
-design
+#colnames(design) <- gsub("group", "", colnames(design))s
 writeLines("---------------------------------Hasta aqui nos interesa por ahora--------------------------------------------")
 #-------------------------------------------------------------------------------
 # Definiendo la matriz de contrastes de interés
