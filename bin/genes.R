@@ -1,6 +1,8 @@
 
+defW<-getOption("warn")
+options(warn = -1)
 instala_paquetes<-function(){
-  pkgs_CRAN<-c("R.utils", "readr", "dplyr","RColorBrewer")
+  pkgs_CRAN<-c("R.utils", "readr", "dplyr","RColorBrewer","stringr")
   pkgs_Bioc<-c("limma", "edgeR")
   chooseCRANmirror(ind = 55)
   #Ahora iteramos por cada paquete
@@ -29,18 +31,17 @@ instala_paquetes<-function(){
   invisible(lapply(c(pkgs_CRAN,pkgs_Bioc), library, character.only = TRUE))
 }
 #Sys.setlocale(category = "LC_COLLATE", locale = "C")
-Sys.setlocale(category = "LC_CTYPE", locale = "C")
+invisible(Sys.setlocale(category = "LC_CTYPE", locale = "C"))
 #Sys.setlocale(category = "LC_MONETARY", locale = "C")
 #Sys.setlocale(category = "LC_NUMERIC", locale = "C")
 #Sys.setlocale(category = "LC_TIME", locale = "C")
-instala_paquetes()
+invisible(instala_paquetes())
 writeLines("
 Hola, bienvenido al script para el analisis de RNA-Seq desarrollado por:
                           Alina y Uriel.
 ")
 
-defW<-getOption("warn")
-options(warn = -1)
+
 
 cat("El directorio de trabajo actual es: ", getwd()," Es el correcto[s/n]: ")
 
@@ -52,7 +53,7 @@ if(raw=="n"){
 }
 
 writeLines("\n")
-cat("Los archivos en formato v?lido que estan disponibles son: \n")
+cat("Los archivos en formato valido que estan disponibles son: \n")
 rfiles<-dir()[grep("\\.csv$|\\.txt$",dir())]
 rfilesAv<-paste(paste(1:length(rfiles),".",sep = ""), rfiles, sep = " ")
 cat(rfilesAv, sep = "\n")
@@ -65,7 +66,7 @@ writeLines("\n")
 
 countData<- readr::read_delim(file = rfiles[selFile], delim = ",", col_names = T,
                          show_col_types = F)
-str(countData)
+
 writeLines("\n")
 
 rm_na<-function(x){
@@ -84,31 +85,9 @@ rm_na<-function(x){
   return(x)
 }
 
-
-
-countData<-rm_na(countData)
-writeLines("viendo datos después de filtar NAs")
-str(countData)
-#Una vez limpios de NAs, guardamos la informacion de los ID de genes en un
-#vector y dejamos solamente las columna que corresponden a muestras, ie, eliminamos
-#la primer columna.
-genesID<-countData[,1]
-countData<-countData[,-1]
-writeLines("Viendo datos después de quitar columna de genes")
-str(countData)
-
-
-
-
-
-library(dplyr)
-
-
-#-------------------------------------------------------------------------------
-#Función para obtener los datos del diseño experimental
 getED<- function(validFiles,sampleFileNumber) {  # nolint # nolint
   avaliableFiles<- validFiles[-sampleFileNumber] # nolint
-  writeLines("Selecciona el archivo que contiene la informacion del diseño experimental para cada 
+  writeLines("Selecciona el archivo que contiene la informacion del disenio experimental para cada 
   \nmuestra escribiendo el numero que le antecede: ")
   rfilesAv<- paste(paste(1:length(avaliableFiles),".",sep = ""), avaliableFiles, sep = " ")
   cat(rfilesAv, sep = "\n")
@@ -123,23 +102,32 @@ getED<- function(validFiles,sampleFileNumber) {  # nolint # nolint
     cat(dplyr::pull(EDFile[sampsWNAs,],1), sep = ", ")
     quit(save = "no")
   }
-  EDFile <- EDFile %>% mutate(across(-1,as.factor))
+  reflevel <- unique(pull(EDFile,2))[1]
+  EDFile <- EDFile %>% mutate(across(-1, factor))
+  #print(paste(levels(EDFile$group)),"Aqui deben aparecer los niveles")
+  EDFile <- mutate_at(EDFile, 2, relevel, ref = reflevel)
   return(EDFile)
 }
+
 EDMetaData<-getED(rfiles,selFile)
 
 
+countData<-rm_na(countData)
+
+
+genesID<-countData[,1]
+countData<-countData[,-1]
+
+
+
+
+
 #-------------------------------------------------------------------------------
-### Paquetes necesarios
-#--------------------
-library(limma)      #
-library(edgeR)      #
-library(R.utils)    #
-#--------------------
+#Función para obtener los datos del diseño experimental
+
+
 countData <- DGEList(counts = countData, group = pull(EDMetaData,2), genes = genesID)
-## Información de la estructura
-#-------------------------------------------------------------------------------
-#
+
 writeLines("El analisis esta por comenzar y los resultados seran almacenados
 en la carpeta \"Resultados_RNASeq\", en el directorio de trabajo que
 usted proporciono al principio.")
@@ -151,17 +139,12 @@ if(!file.exists(folderResultados)) {
 
 
 
-#-------------------------------------------------------------------------------
-## obteniendo "Conteos por millón" que servirán para los gráficos exploratorios
 cpm <- cpm(countData)
 lcpm <- cpm(countData, log=TRUE)
 L <- mean(countData$samples$lib.size) * 1e-6
 M <- median(countData$samples$lib.size) * 1e-6
-c(L, M)
-summary(lcpm)
 
 
-library(RColorBrewer)
 
 fileNameGenerator<-function(folder,fileName){
   paste(c(getwd(),folder,fileName), sep = "", collapse = "/")
@@ -193,7 +176,7 @@ densityPlotCounts<-function(counts) {
   legend("topright", colnames(data$counts), text.col=col, bty="n")
   keep.exprs <- filterByExpr(data, group=data$sample$group)
   data <- data[keep.exprs,, keep.lib.sizes=FALSE]
-  lcpm <- cpm(data, log=TRUE) #actualizando los log(cpm) usando los datos filtrados
+  lcpm <- cpm(data, log=TRUE) 
 
   plot(density(lcpm[,1]), col=col[1], lwd=2, ylim=c(0,0.26), las=2, main="", xlab="")
   title(main="B. Datos Filtrados", xlab="Log-cpm")
@@ -207,19 +190,10 @@ densityPlotCounts<-function(counts) {
 
 plotGenerator(densityPlotCounts, folderResultados, "01_densidad_Crudos_vs_Filtrados.png", 1000*2.1, 1800, 300, counts = countData)
 
-#-------------------------------------------------------------------------------
-# Revisando por genes con conteos cero en todas las muestras 
-table(rowSums(countData$counts==0)==9)
-## Filtrado de genes
 keep.exprs <- filterByExpr(countData, group=collapse(EDMetaData,2))
 countData <- countData[keep.exprs,, keep.lib.sizes=FALSE]
-#dim(countData)
 
-#-------------------------------------------------------------------------------
 
-#-------------------------------------------------------------------------------
-# Gráficos de caja para ver la dispersión de las muestras antes y después de
-# normalizar
 boxPlotNormalization<-function(counts){
   data<-counts
   nsamples <- ncol(data)
@@ -236,18 +210,7 @@ boxPlotNormalization<-function(counts){
 }
 plotGenerator(boxPlotNormalization, folderResultados, "02_boxPlot_Crudos_vs_Normalizados.png", 1000*2.1, 1800, 300, counts = countData)
 
-# Nota: Debido a que observamos unos factores de normalización muy cercanos a 1,
-# se probó para ver si en realidad el valor esperado es 1
 
-#Primero normalidad
-#shapiro.test(x$samples$norm.factors) #Nos inclinamos hacia la nula de N(mu,sigma)
-#Ahora si la de interés. 
-#t.test(x$samples$norm.factors, alternative = "two.sided",mu=1)
-
-#-------------------------------------------------------------------------------
-# Reducción de dimensionalidad con MDS (método basado en distancias)
-writeLines("Viendo lo que manda el pull del DE")
-collapse(EDMetaData,2)
 
 dimensionReductionPlot<-function(counts) {
   x<-counts
@@ -266,72 +229,122 @@ plotGenerator(dimensionReductionPlot,folderResultados, "03_MDS_Dimension_Reducti
 fullSampleInfo <- data.frame(EDMetaData[,-1], countData$samples[,-1], check.names = F)
 names(fullSampleInfo) <- c("group", names(fullSampleInfo)[-1])
 countData$samples <- fullSampleInfo
-# Creando nuestra matriz diseño para el modelo lineal
+
 formulaED <- paste("~0+",paste(names(countData$samples[1:dim(EDMetaData)[2]-1]),sep="",collapse = "+"),sep="") 
 formulaED <- as.formula(formulaED)
 names(EDMetaData)<-c(names(EDMetaData)[1],names(countData$samples[1:dim(EDMetaData)[2]-1]))
-EDMetaData
 design <- model.matrix(formulaED, EDMetaData)
-# Buscando y reemplazando patrones: ¿suena a grep?
-#colnames(design) <- gsub("group", "", colnames(design))s
-writeLines("---------------------------------Hasta aqui nos interesa por ahora--------------------------------------------")
-#-------------------------------------------------------------------------------
-# Definiendo la matriz de contrastes de interés
+
+
+
+nivelesDisp <- levels(EDMetaData$group)
+colnames(design)[1:length(nivelesDisp)] <- nivelesDisp
+constrastes <- c()
+for(i in 1:(length(nivelesDisp)-1)){
+  n<- length(nivelesDisp)
+  constrastes<-c(constrastes,
+                 paste(nivelesDisp[i],"-", nivelesDisp[-(1:i)]))
+}  
 contr.matrix <- makeContrasts(
-  WTvsult1 = WT-ult1, 
-  WTvsult1ult2 = WT - ult1ult2, 
+  contrasts = constrastes, 
   levels = colnames(design))
-contr.matrix
 
-#-------------------------------------------------------------------------------
-# Calcular pesos para ajuste de modelo lineal usando limma, al parecer
-# es una especie de MC Ponderados
-par(mfrow=c(1,2))
-v <- voom(x, design, plot=TRUE)
-v
 
-#-------------------------------------------------------------------------------
-vfit <- lmFit(v, design) # Ajustando modelos lineales a cada gen
-vfit <- contrasts.fit(vfit, contrasts=contr.matrix) #Ajustando los contrastes
-efit <- eBayes(vfit) # Usando EB para inferencia (en este caso expresión dif)
-plotSA(efit, main="Final model: Mean-variance trend") # Mean-variance trend
+v <- voom(countData, design, save.plot = T)
+mean_varPlot_voom <- function(data){
+  plot(y~x, data, xlab = "log2(conteo + 0.5)", ylab = "Error estandar", pch = 20,
+  main = "voom: Tendencia Media-Varianza")
+}
+plotGenerator(mean_varPlot_voom,folderResultados, "04_Relacion_Media_Varianza_Pre.png", 1000*2.1, 1800, 300, data = v$voom.xy)
 
-#-------------------------------------------------------------------------------
-# resumen de los resultados de los contrastes
+
+vfit <- lmFit(v, design) 
+vfit <- contrasts.fit(vfit, contrasts=contr.matrix) 
+efit <- eBayes(vfit) 
+plotGenerator(plotSA,folderResultados, "05_Relacion_Media_Varianza_MFinal.png", 1000*2.1, 
+1800, 300, fit = efit, xlab = "Promedio log-expresion", ylab = "Error estandar",
+main="Modelo final: Tendencia Media-Varianza")
+
 et<-decideTests(efit)
-summary(et)
 
-#-------------------------------------------------------------------------------
-# usando otro método (también de EB) para expresión dif dado un logfc mínimo
-tfit <- treat(vfit, lfc=1)
-dt <- decideTests(tfit)
-summary(dt)
-str(tfit)
-# Extrayendo los índices de los genes que se encuentran dif bajo ambas 
-# condiciones 
-de.common <- which(dt[,1]!=0 & dt[,2]!=0)
-length(de.common)
-head(tfit$genes$genes[de.common])
+extractDown<-function(contraste,geneInfo){
+idDown <- which(contraste < 0)
+genesDown <- data.frame(pull(geneInfo,1)[idDown])
+colnames(genesDown) <- colnames(contraste) 
+return(genesDown)
+}
 
-#-------------------------------------------------------------------------------
-# Diagrama de Venn para mostrar la cantidad de genes en cada condición
-par(mfrow=c(1,1))
-vennDiagram(dt[,1:2], circle.col=c("turquoise", "salmon"))
+extractUp<-function(contraste,geneInfo){
+idDown <- which(contraste > 0)
+genesDown <- data.frame(pull(geneInfo,1)[idDown])
+colnames(genesDown) <- colnames(contraste) 
+return(genesDown)
+}
 
-#-------------------------------------------------------------------------------
-# Lista (ordenada de menor a mayor según p-value) de genes para los constrastes
-# de interés
-WT.vs.ult1 <- topTreat(tfit, coef=1, n=Inf)
-WT.vs.ult1ult2 <- topTreat(tfit, coef=2, n=Inf)
-head(WT.vs.ult1)
-head(WT.vs.ult1ult2)
+saveGenesDE <- function(DE_Genes,up_down_no){
+  nombreContraste <- colnames(DE_Genes)
+  file <- paste(nombreContraste,"_",up_down_no,"_DEGenes_Nombres.csv",sep = "") 
+  fileDir <- fileNameGenerator(folderResultados,fileName = file)
+  write.csv(x = DE_Genes, file = fileDir, row.names = F)
+}
 
-#-------------------------------------------------------------------------------
-# Estas son unas gráficas que aún nos faltan por estudiar
-par(mfrow=c(1,1))
-plotMD(tfit, column=1, status=dt[,1], main=colnames(tfit)[1], 
-       xlim=c(-8,13)) # Investigar qué hace esta función.
-#-------------------------------------------------------------------------------
+write.down.DEFiles <- function(constrastes,geneInfo, up_down_no = "Down") {
+  nContrastes <- ncol(constrastes)
+  for(i in 1:nContrastes){
+    down_et <- extractDown(constrastes[,i], geneInfo)
+    saveGenesDE(down_et, up_down_no)
+  }
+}
+
+write.up.DEFiles <- function(constrastes,geneInfo, up_down_no = "Up") {
+  nContrastes <- ncol(constrastes)
+  for(i in 1:nContrastes){
+    down_et <- extractUp(constrastes[,i], geneInfo)
+    saveGenesDE(down_et, up_down_no)
+  }
+}
 
 
-options(warn = defW)
+write.down.DEFiles(et, genesID)
+write.up.DEFiles(et, genesID)
+
+write.down.details <- function(contrastes, fit, geneInfo){
+  nContrastes <- ncol(contrastes)
+  for(i in 1:nContrastes){
+    down_et <- extractDown(contrastes[,i], geneInfo)
+    details <- topTreat(fit, coef = i, n = Inf, genelist = geneInfo)
+    allGenes<- details$gene_id
+    commonsID <- match(down_et[,1], allGenes)
+    nombreContraste <- colnames(down_et)
+    file <- paste(nombreContraste,"_Details_Down","_DEGenes.csv", sep = "")
+    fileDir <- fileNameGenerator(folderResultados, fileName = file)
+    write.csv(x = details[commonsID,], file = fileDir, row.names = F)
+  }
+}
+
+write.up.details <- function(contrastes, fit, geneInfo){
+  nContrastes <- ncol(contrastes)
+  for(i in 1:nContrastes){
+    up_et <- extractUp(contrastes[,i], geneInfo)
+    details <- topTreat(fit, coef = i, n = Inf, genelist = geneInfo)
+    allGenes<- details$gene_id
+    commonsID <- match(up_et[,1], allGenes)
+    nombreContraste <- colnames(up_et)
+    file <- paste(nombreContraste,"_Details_Up","_DEGenes.csv", sep = "")
+    fileDir <- fileNameGenerator(folderResultados, fileName = file)
+    write.csv(x = details[commonsID,], file = fileDir, row.names = F)
+  }
+}
+
+write.down.details(et, efit, genesID)
+write.up.details(et, efit, genesID)
+
+##-------------------------------------------------------------------------------
+## Estas son unas gráficas que aún nos faltan por estudiar
+#par(mfrow=c(1,1))
+#plotMD(tfit, column=1, status=dt[,1], main=colnames(tfit)[1], 
+#       xlim=c(-8,13)) # Investigar qué hace esta función.
+##-------------------------------------------------------------------------------
+#
+#
+#options(warn = defW)
