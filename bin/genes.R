@@ -2,7 +2,7 @@
 defW<-getOption("warn")
 options(warn = -1)
 instala_paquetes<-function(){
-  pkgs_CRAN<-c("R.utils", "readr", "dplyr","RColorBrewer","stringr")
+  pkgs_CRAN<-c("R.utils", "readr", "dplyr","RColorBrewer")
   pkgs_Bioc<-c("limma", "edgeR")
   chooseCRANmirror(ind = 55)
   #Ahora iteramos por cada paquete
@@ -188,7 +188,9 @@ densityPlotCounts<-function(counts) {
   legend("topright", colnames(data$counts), text.col=col, bty="n")
 }
 
-plotGenerator(densityPlotCounts, folderResultados, "01_densidad_Crudos_vs_Filtrados.png", 1000*2.1, 1800, 300, counts = countData)
+plotGenerator(densityPlotCounts, folderResultados, 
+              "01_densidad_Crudos_vs_Filtrados.png", 
+              1000*2.1, 1800, 300, counts = countData)
 
 keep.exprs <- filterByExpr(countData, group=collapse(EDMetaData,2))
 countData <- countData[keep.exprs,, keep.lib.sizes=FALSE]
@@ -208,7 +210,9 @@ boxPlotNormalization<-function(counts){
   boxplot(lcpm, las=2, col=col, main="")
   title(main="B. Datos normalizados",ylab="Log-cpm")
 }
-plotGenerator(boxPlotNormalization, folderResultados, "02_boxPlot_Crudos_vs_Normalizados.png", 1000*2.1, 1800, 300, counts = countData)
+plotGenerator(boxPlotNormalization, 
+              folderResultados, "02_boxPlot_Crudos_vs_Normalizados.png", 
+              1000*2.1, 1800, 300, counts = countData)
 
 
 
@@ -226,11 +230,13 @@ dimensionReductionPlot<-function(counts) {
 plotGenerator(dimensionReductionPlot,folderResultados, "03_MDS_Dimension_Reduction.png", 1000*2.1, 1800, 300, counts = countData)
 #-------------------------------------------------------------------------------
 
-fullSampleInfo <- data.frame(EDMetaData[,-1], countData$samples[,-1], check.names = F)
+fullSampleInfo <- data.frame(EDMetaData[,-1], countData$samples[,-1], 
+                             check.names = F)
 names(fullSampleInfo) <- c("group", names(fullSampleInfo)[-1])
 countData$samples <- fullSampleInfo
 
-formulaED <- paste("~0+",paste(names(countData$samples[1:dim(EDMetaData)[2]-1]),sep="",collapse = "+"),sep="") 
+formulaED <- paste("~0+",paste(names(countData$samples[1:dim(EDMetaData)[2]-1]),
+                               sep="",collapse = "+"),sep="") 
 formulaED <- as.formula(formulaED)
 names(EDMetaData)<-c(names(EDMetaData)[1],names(countData$samples[1:dim(EDMetaData)[2]-1]))
 design <- model.matrix(formulaED, EDMetaData)
@@ -258,7 +264,7 @@ mean_varPlot_voom <- function(data){
 plotGenerator(mean_varPlot_voom,folderResultados, "04_Relacion_Media_Varianza_Pre.png", 1000*2.1, 1800, 300, data = v$voom.xy)
 
 
-vfit <- lmFit(v, design) 
+vfit <- lmFit(v, design)
 vfit <- contrasts.fit(vfit, contrasts=contr.matrix) 
 efit <- eBayes(vfit) 
 plotGenerator(plotSA,folderResultados, "05_Relacion_Media_Varianza_MFinal.png", 1000*2.1, 
@@ -304,10 +310,6 @@ write.up.DEFiles <- function(constrastes,geneInfo, up_down_no = "Up") {
   }
 }
 
-
-write.down.DEFiles(et, genesID)
-write.up.DEFiles(et, genesID)
-
 write.down.details <- function(contrastes, fit, geneInfo){
   nContrastes <- ncol(contrastes)
   for(i in 1:nContrastes){
@@ -348,3 +350,5 @@ write.up.details(et, efit, genesID)
 #
 #
 #options(warn = defW)
+
+
