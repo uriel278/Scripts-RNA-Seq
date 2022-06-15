@@ -188,9 +188,9 @@ densityPlotCounts<-function(counts) {
   legend("topright", colnames(data$counts), text.col=col, bty="n")
 }
 
-plotGenerator(densityPlotCounts, folderResultados, 
+invisible(plotGenerator(densityPlotCounts, folderResultados, 
               "01_densidad_Crudos_vs_Filtrados.png", 
-              1000*2.1, 1800, 300, counts = countData)
+              1000*2.1, 1800, 300, counts = countData))
 
 keep.exprs <- filterByExpr(countData, group=collapse(EDMetaData,2))
 countData <- countData[keep.exprs,, keep.lib.sizes=FALSE]
@@ -210,9 +210,9 @@ boxPlotNormalization<-function(counts){
   boxplot(lcpm, las=2, col=col, main="")
   title(main="B. Datos normalizados",ylab="Log-cpm")
 }
-plotGenerator(boxPlotNormalization, 
+invisible(plotGenerator(boxPlotNormalization, 
               folderResultados, "02_boxPlot_Crudos_vs_Normalizados.png", 
-              1000*2.1, 1800, 300, counts = countData)
+              1000*2.1, 1800, 300, counts = countData))
 
 
 
@@ -227,7 +227,8 @@ dimensionReductionPlot<-function(counts) {
   title(main="Sample groups")
 }
 
-plotGenerator(dimensionReductionPlot,folderResultados, "03_MDS_Dimension_Reduction.png", 1000*2.1, 1800, 300, counts = countData)
+invisible(plotGenerator(dimensionReductionPlot,folderResultados, 
+"03_MDS_Dimension_Reduction.png", 1000*2.1, 1800, 300, counts = countData))
 #-------------------------------------------------------------------------------
 
 fullSampleInfo <- data.frame(EDMetaData[,-1], countData$samples[,-1], 
@@ -261,15 +262,16 @@ mean_varPlot_voom <- function(data){
   plot(y~x, data, xlab = "log2(conteo + 0.5)", ylab = "Error estandar", pch = 20,
   main = "voom: Tendencia Media-Varianza")
 }
-plotGenerator(mean_varPlot_voom,folderResultados, "04_Relacion_Media_Varianza_Pre.png", 1000*2.1, 1800, 300, data = v$voom.xy)
+invisible(plotGenerator(mean_varPlot_voom,folderResultados, "04_Relacion_Media_Varianza_Pre.png", 
+1000*2.1, 1800, 300, data = v$voom.xy))
 
 
 vfit <- lmFit(v, design)
 vfit <- contrasts.fit(vfit, contrasts=contr.matrix) 
 efit <- eBayes(vfit) 
-plotGenerator(plotSA,folderResultados, "05_Relacion_Media_Varianza_MFinal.png", 1000*2.1, 
+invisible(plotGenerator(plotSA,folderResultados, "05_Relacion_Media_Varianza_MFinal.png", 1000*2.1, 
 1800, 300, fit = efit, xlab = "Promedio log-expresion", ylab = "Error estandar",
-main="Modelo final: Tendencia Media-Varianza")
+main="Modelo final: Tendencia Media-Varianza"))
 
 et<-decideTests(efit)
 
